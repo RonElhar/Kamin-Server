@@ -1,3 +1,5 @@
+socketio
+requests
 cffi==1.13.2
 Click==7.0
 dnspython==1.16.0
