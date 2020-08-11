@@ -21,7 +21,7 @@ It contains an API for transfering data to Kamin-Client, and managing the applic
       ```bash
       config = "mongodb+srv://bkla_admin:dasfdsafsafsda@cluster0-erofa.mongodb.net/test?retryWrites=true&w=majority"
       ```
-* Then execute:
+* Then to start the server run in your shell:
     ```bash
     python kamin_API.py
     ```
