@@ -1,7 +1,8 @@
 # Kamin-Server
 
 Kamin-Server is a Python code repository of a deployed web app, for conducting experiments of non-convergent discussions, with integration ready advanced visualizations
-Contains an API for transfering data to Kamin-Client.
+
+It Contains an API for transfering data to Kamin-Client.
 
 ## Getting Started
 
