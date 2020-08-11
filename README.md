@@ -11,7 +11,7 @@ It contains an API for transfering data to Kamin-Client, and managing the applic
 * After cloning the repositoy to your preffered code editor, open the terminal and do the following:
   * Create virtualenv & activate it
   * cd to the directory where requirements.txt is located
-  * run in your shell:
+  * Run in your shell:
     ```bash
     pip install -r requirements.txt
     ```
