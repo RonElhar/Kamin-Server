@@ -30,10 +30,10 @@ And kamin server will run at http://localhost:5000/
 Start Kamin-Client to see the interface being used to show the data, instructions at https://github.com/RonElhar/Kamin-Client see README
 
 ## Curse Bot
-In the project root directory you can find a file called curse_bot.py, a bot which performs the following:
+In the project root directory you can find a file called curse_bot.py, a bot which integrates to the application and performs the following:
 * login into the system 
 * Joins a dicussion with discussion_id
-* Alerts when a message with sent with the set of curse words that called curse_set
+* Alerts when an a user added comment which contains a word from the set of curse words that called *curse_set*
 
 ## To Use Deployment Version of the project
 
