@@ -18,9 +18,9 @@ It contains an API for transfering data to Kamin-Client, and managing the applic
 * Create your own MongoDB database.
   * Find instructions at https://www.mongodb.com/
 * In the root directory of the project create file db_config.py and write your credentials to config str variable, for example:
-      ```bash
-      config = "mongodb+srv://bkla_admin:dasfdsafsafsda@cluster0-erofa.mongodb.net/test?retryWrites=true&w=majority"
-      ```
+  ```bash
+  config = "mongodb+srv://bkla_admin:dasfdsafsafsda@cluster0-erofa.mongodb.net/test?retryWrites=true&w=majority"
+  ```
 * Then to start the server run in your shell:
     ```bash
     python kamin_API.py
