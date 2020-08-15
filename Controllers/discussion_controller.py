@@ -2,12 +2,15 @@ from Entities.analysis_data import AnalysisData
 from Entities.comment import CommentNode
 
 from db_management.db_management import DBManagement
-from Entities.new_discussion import Discussion, DiscussionTree
+from Entities.discussion import Discussion, DiscussionTree
 
 
 class DiscussionController:
     db_management = DBManagement()
 
+    # Creates a Discussion object from the discussion dict and transfer it to DBManagement,
+    # then relates the root comment to the discussion and return the DiscussionTree that contains a recursive
+    # structure of the discussion and root_comment
     def create_discussion(self, title, categories, root_comment_dict, configuration):
         disc = Discussion(title=title, categories=categories, root_comment_id=None, num_of_participants=0,
                           total_comments_num=0, is_simulation=False, configuration=configuration)
@@ -22,10 +25,14 @@ class DiscussionController:
 
         return discussion_tree
 
+    # Returns a list of all the discussion ids of the simulations discussion or real time discussions
+    # according to is_simulation parameter
     def get_discussions(self, is_simulation):
         discussions = self.db_management.get_discussions(is_simulation)
         return discussions
 
+    # Retrieves from DB the discussion details and all the comments that relates to the discussion_id
+    # Build the DiscussionTree object the contains the root_comment and all her sub_comments recursievly
     def get_discussion(self, discussion_id):
         discussion, comments = self.db_management.get_discussion(discussion_id)
         root_comment_dict = comments[discussion["root_comment_id"]]
@@ -40,6 +47,10 @@ class DiscussionController:
                                          root_comment_id=discussion["root_comment_id"], root_comment=root_comment)
         return discussion_tree
 
+    # Build the recursive structure of all the comments in the comments dictionary that belongs to the discussion
+    # For each comment, starting with the root comment, iterate all the sub comments ids list recursively and find them
+    # at the dictionary comments, create a commentNode and relates it to the parent comment until we have the complete
+    # discussion tree
     def get_comment_recursive(self, comment_dict, comments, discussion):
         if len(comment_dict["child_comments"]) is 0:
             comment = CommentNode(id=comment_dict["_id"].binary.hex(), author=comment_dict["author"],
@@ -63,17 +74,21 @@ class DiscussionController:
                               child_comments=child_list, comment_type=comment_dict["comment_type"])
         return comment
 
+    # Creates a CommentNode object with comment_type="comment" from the comment dict and transfer it to DBManagement
+    # When AI server will be available, the AI server will be called, evaluate the comment content and give a feedback,
+    # and this feedback(alert) will be sent with the response to client
     def add_comment(self, comment_dict):
         comment = CommentNode(author=comment_dict["author"], text=comment_dict["text"],
                               parent_id=comment_dict["parentId"], discussion_id=comment_dict["discussionId"],
                               depth=comment_dict["depth"], comment_type="comment", child_comments=[])
         # Call KaminAI
-        # KaminAI(comment)
+        # kamin_response = KaminAI(comment)
         comment.set_id(self.db_management.add_comment(comment))
         response = {"comment": comment}  # , "KaminAIresult": kamin_response
 
         return response
 
+    # Creates a CommentNode object with comment_type="alert" from the alert dict and transfer it to DBManagement
     def add_alert(self, alert_dict):
         comment = CommentNode(author=alert_dict["author"], text=alert_dict["text"],
                               parent_id=alert_dict["parentId"], discussion_id=alert_dict["discussionId"],
@@ -84,6 +99,8 @@ class DiscussionController:
 
         return response
 
+    # Creates a CommentNode object with comment_type="configuration" from the configuration dict
+    # and transfer it to DBManagement
     def change_configuration(self, configuration_dict):
         comment = CommentNode(author=configuration_dict["author"], text=configuration_dict["text"],
                               parent_id=configuration_dict["parentId"],
@@ -129,4 +146,3 @@ class DiscussionController:
 
     def get_responded_users(self, discussion_id):
         return self.db_management.get_responded_users(discussion_id)
-

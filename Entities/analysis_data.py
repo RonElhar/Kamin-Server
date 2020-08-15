@@ -1,7 +1,6 @@
-from enum import Enum
-from Entities.comment import CommentNode
 
 
+# Object that supposed to contains the Kamin analyzed data from KaminAI server when will be available
 class AnalysisData:
 
     def __init__(self, triggering_comment):

@@ -1,6 +1,10 @@
 from datetime import datetime
 
 
+# Comment object contains all the details of the comment creation, who is the author and for who it replied, the depth
+# and timestamp attributes allowing the client to now where to place the comment in the presented discussion.
+# The type of the comment can be comment - for regular comments between users, alert - for moderator alerts and
+# config - for configuration changes during the discussion
 class Comment:
 
     def __init__(self, *args, **kwargs):
@@ -13,11 +17,6 @@ class Comment:
         self.depth = kwargs.get('depth', 0)
         self.timestamp = kwargs.get('timestamp', datetime.now().timestamp())
         self.comment_type = kwargs.get('comment_type', 'comment')
-
-    """
-    extra_data dict_keys(['file:line', 'subreddit', 'from_kind', 'from', 'title', 'num_comments', 'subreddit_id',
-    'downs', 'saved', 'from_id', 'permalink', 'name', 'url', 'ups'])
-    """
 
     def get_id(self):
         return self._id
@@ -85,6 +84,7 @@ class Comment:
             self.parent_id)
 
 
+# The CommentNode contains the child_comments list, that relates a comment for all her sub comments in the discussion
 class CommentNode(Comment):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

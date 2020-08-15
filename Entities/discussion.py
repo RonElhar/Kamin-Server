@@ -1,6 +1,9 @@
 import pandas as pd
 
 
+# Discussion object contains all the details of tha discussion initialization and statistics that updated during the
+# real time conversation, when the discussion became to simulation the attribute is_simulation will change to true
+# The discussion contains the root_comment_id, the detail the relates it for the conversation tree
 class Discussion:
 
     def __init__(self, *args, **kwargs):
@@ -76,6 +79,8 @@ class Discussion:
         }
 
 
+# The DiscussionTree contains the root_comment object (and not the id string of it) , it relates the discussion to the
+# conversation tree that starts from the root comment
 class DiscussionTree(Discussion):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -92,6 +97,7 @@ class DiscussionTree(Discussion):
         discussion_json_tree = tree_to_json(self.root_comment)
         return {'discussion': discussion, 'tree': discussion_json_tree}
 
+    # Write the discussionTree to csv file
     def to_csv(self):
         records = []
         first_record = self.root_comment.to_csv_record()
@@ -109,6 +115,7 @@ class DiscussionTree(Discussion):
 
         return df.to_csv()
 
+    # Add new comment to the right position in the tree
     def add_comment(self, comment):
         self.add_comment_recursive(self.root_comment, comment)
         if comment.comment_type != "comment":

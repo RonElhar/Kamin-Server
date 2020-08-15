@@ -3,6 +3,9 @@ from passlib.apps import custom_app_context as pwd_context
 from enum import Enum
 
 
+# All permissions that available for a user: 1 - regular user, 2 - moderator user, 3 - ROOT
+# moderator users can be intervene in the conversations, give alerts and change configurations
+# ROOT user can control the permissions of the other users, grant users the moderator permission
 class Permission(Enum):
     USER = 1
     MODERATOR = 2

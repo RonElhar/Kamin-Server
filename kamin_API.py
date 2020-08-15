@@ -1,7 +1,7 @@
 import json
-from flask import Flask, abort, request, jsonify, g, url_for, render_template
+from flask import Flask, abort, request, jsonify, g
 from flask_cors import CORS
-from flask_socketio import SocketIO, join_room, emit, send, leave_room, ConnectionRefusedError
+from flask_socketio import SocketIO, join_room, leave_room
 from flask_httpauth import HTTPBasicAuth
 from Controllers.discussion_controller import DiscussionController
 from Controllers.user_controller import UserController
@@ -25,6 +25,7 @@ user_controller = UserController()
 discussion_controller = DiscussionController()
 
 
+# Verify the authentication of user with the token received in the request
 def verify_auth_token(token):
     s = Serializer(app.config['SECRET_KEY'])
     try:
@@ -36,7 +37,7 @@ def verify_auth_token(token):
     user = user_controller.get_user(data['id'])
     return user
 
-
+# Verify the authentication of user with the token or username and password that received in the request
 @auth.verify_password
 def verify_password(username_or_token, password):
     user = verify_auth_token(username_or_token)
@@ -48,6 +49,7 @@ def verify_password(username_or_token, password):
     return True
 
 
+# Entry point for adding new user to the system
 @app.route('/api/newUser', methods=['POST'])
 def new_user():
     try:
@@ -67,7 +69,7 @@ def new_user():
         abort(400, e)
 
 
-# TODO: this is not safe in production
+# Entry point for getting user details
 @app.route('/api/getUser', methods=['GET'])
 def get_user():
     try:
@@ -83,6 +85,7 @@ def get_user():
         abort(500, e)
 
 
+# Returns all the users names of the active users in the request moment of the discussion_id room
 def get_active_users(discussion_id):
     active_users = []
     if len(USERS) > 0:
@@ -90,6 +93,7 @@ def get_active_users(discussion_id):
     return active_users
 
 
+# Returns all the moderators users names of the active moderators in the request moment of the discussion_id room
 def get_active_moderators(discussion_id):
     active_moderators = []
     active_users = get_active_users(discussion_id)
@@ -99,11 +103,14 @@ def get_active_moderators(discussion_id):
     return active_moderators
 
 
+# Returns all the users names of the users that write at least one comment in the discussion and can be alerted
 def get_active_discussion_users(discussion_id):
     responded_users = discussion_controller.get_responded_users(discussion_id)
     return list(responded_users)
 
 
+# Entry point for getting all the visualization configurations of the active users in the discussion,
+# active means that they are connected and presents in the discussion in the request moment
 @app.route('/api/getActiveUsersConfigurations/<string:discussion_id>', methods=['GET'])
 def get_active_users_configurations(discussion_id):
     try:
@@ -118,6 +125,7 @@ def get_active_users_configurations(discussion_id):
         abort(500, e)
 
 
+# Entry point for getting all the users and moderators names that exist in the system
 @app.route('/api/getUsers', methods=['GET'])
 def get_users():
     try:
@@ -129,6 +137,7 @@ def get_users():
         abort(500, e)
 
 
+# Entry point for retrieve the statistics of user in discussion
 @app.route('/api/getUserStatisticsInDiscussion', methods=['POST'])
 def get_user_discussion_statistics():
     try:
@@ -147,6 +156,7 @@ def get_user_discussion_statistics():
         abort(500, e)
 
 
+# Entry point for retrieve the discussion statistics
 @app.route('/api/getDiscussionStatistics', methods=['POST'])
 def get_discussion_statistics():
     try:
@@ -162,6 +172,7 @@ def get_discussion_statistics():
         abort(500, e)
 
 
+# Entry point for update the user permission
 @app.route('/api/changeUserPermission', methods=['POST'])
 @auth.login_required
 def change_user_permission():
@@ -181,6 +192,7 @@ def change_user_permission():
         abort(500, e)
 
 
+# Entry point for logged in to the system and get a valid token
 @app.route('/api/login')
 @auth.login_required
 def get_auth_token():
@@ -190,13 +202,7 @@ def get_auth_token():
     return jsonify({'token': token.decode('ascii'), 'permission': permission, 'duration': 60000})
 
 
-@app.route('/api/resource')
-@auth.login_required
-def get_resource():
-    print("gal")
-    return jsonify({'data': 'Hello, %s!' % g.user.get_user_name()})
-
-
+# Entry point for getting the discussion_id tree contains all the comments and discussion details
 @app.route('/api/getDiscussion/<string:discussion_id>', methods=['GET'])
 @auth.login_required
 def get_discussion(discussion_id):
@@ -211,7 +217,7 @@ def get_discussion(discussion_id):
         abort(400)
         return
 
-
+# Entry point for downloading the discussion_id tree contains all the comments and discussion details as csv file
 @app.route('/api/download/<string:discussion_id>', methods=['GET'])
 @auth.login_required
 def download(discussion_id):
@@ -228,7 +234,8 @@ def download(discussion_id):
         abort(400)
         return
 
-
+# Entry point for getting all the discussions ids list that are real-time or simulation depending on the
+# is_simulation parameter
 @app.route('/api/getDiscussions/<string:is_simulation>', methods=['GET'])
 @auth.login_required
 def get_discussions(is_simulation):
@@ -241,15 +248,13 @@ def get_discussions(is_simulation):
         abort(400)
         return
 
-
+# Entry point for creating new discussion in the system, new discussions created as a real-time discussions
+# and added to the ROOMS list as one of the real-time discussion that available for users to join
 @app.route('/api/createDiscussion', methods=['POST'])
 @auth.login_required
 def create_discussion():
     try:
         user = g.user
-        # if (user.get_permission() is not Permission.MODERATOR.value) and (
-        #         user.get_permission() is not Permission.ROOT.value):
-        #     raise Exception("User not permitted to create discussion!")
         data = dict(request.json)
         if not data.keys().__contains__("title") or data["title"] is None:
             raise Exception("Title is missing, can't create discussion!")
@@ -278,7 +283,8 @@ def create_discussion():
         abort(400, e)
         return
 
-
+# Socket entry point for turn a real-time discussion to simulation, it block the possibility to join and add comments
+# to the discussion, and it becomes to be available for watching only
 @socket_io.on('end_session')
 def end_real_time_session(data):
     token = data['token']
@@ -291,7 +297,8 @@ def end_real_time_session(data):
     ROOMS.pop(discussion_id)
     socket_io.emit("end_session")
 
-
+# Socket entry point for joining a discussion, it will update all the other clients in the room
+# that new user join the discussion
 @socket_io.on('join')
 def on_join(data):
     token = data['token']
@@ -338,7 +345,7 @@ def on_join(data):
         socket_io.emit("update active users", data=disc_responded_users, room=USERS[room][moderator])
         socket_io.emit("new user config", data=all_users_visualizations_config, room=USERS[room][moderator])
 
-
+# Socket entry point for leaving a discussion
 @socket_io.on('leave')
 def on_leave(data):
     room = data['discussionId']
@@ -355,7 +362,7 @@ def on_leave(data):
         simulation_indexes.pop(room)
     socket_io.emit("user leave", data=username + " leaved the discussion", room=room)
 
-
+# Socket entry point for adding new comment in discussion
 @socket_io.on("add comment")
 def add_comment(request_comment):
     json_string = request_comment
@@ -370,7 +377,7 @@ def add_comment(request_comment):
     for moderator in moderators:
         socket_io.emit("update active users", data=disc_responded_users, room=USERS[room][moderator])
 
-
+# Socket entry point for adding new alert in discussion
 @socket_io.on("add alert")
 def add_alert(request_alert):
     alert_dict = json.loads(request_alert)
@@ -388,7 +395,7 @@ def add_alert(request_alert):
         for moderator in moderators:
             socket_io.emit("new alert", data=response["comment"].to_client_dict(), room=USERS[room][moderator])
 
-
+# Socket entry point for changing user/s visualizations configuration in discussion
 @socket_io.on("change configuration")
 def change_configuration(request_configuration):
     configuration_dict = json.loads(request_configuration)
@@ -420,7 +427,7 @@ def client_connect():
 def client_disconnect():
     print("client disconnected")
 
-
+# Socket entry point for presenting the next comment in order when running simulation by moderator control
 @socket_io.on("next")
 def handle_next(request_data):
     room = request_data['discussionId']
@@ -433,7 +440,8 @@ def handle_next(request_data):
     else:
         socket_io.emit("error", data="back failed - out of bound", room=request.sid)
 
-
+# Socket entry point for presenting the previous comment in order when running simulation
+# by moderator control
 @socket_io.on("back")
 def handle_back(request_data):
     room = request_data['discussionId']
@@ -446,7 +454,8 @@ def handle_back(request_data):
     else:
         socket_io.emit("error", data="back failed - out of bound", room=request.sid)
 
-
+# Socket entry point for presenting all the comments one by one in order when running simulation
+# by moderator control
 @socket_io.on("all")
 def handle_all(request_data):
     room = request_data['discussionId']
@@ -456,7 +465,7 @@ def handle_all(request_data):
     simulation_indexes[room] = ROOMS[room].total_comments_num + ROOMS[room].total_alerts_num
     socket_io.emit("all", room=room)
 
-
+# Socket entry point for reset the presenting of the discussion comments when running simulation by moderator control
 @socket_io.on("reset")
 def handle_reset(request_data):
     room = request_data['discussionId']
@@ -466,7 +475,7 @@ def handle_reset(request_data):
     simulation_indexes[room] = 1
     socket_io.emit("reset", room=room)
 
-
+# Socket entry point for change the presenting order of the comments when running simulation by moderator control
 @socket_io.on("change_simulation_order")
 def change_order(request_data):
     room = request_data['discussionId']
@@ -480,7 +489,7 @@ def change_order(request_data):
     simulation_indexes[room] = 1
     socket_io.emit("change_simulation_order", room=room)
 
-
+# Socket entry point for change the control of the simulation running, and provide to users to control themselves on it
 @socket_io.on("self control change")
 def change_control(request_data):
     room = request_data['discussionId']
@@ -496,6 +505,5 @@ def change_control(request_data):
 
 
 if __name__ == '__main__':
-    # app.debug = True
     socket_io.run(app, debug=False)
     print("bla")
